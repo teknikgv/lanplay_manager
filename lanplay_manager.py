@@ -80,11 +80,9 @@ class LanplayManagerWindow(QMainWindow):
         
 
     def launch_server(self):
-        selectedServer = self.check_selected_server()
-        if selectedServer:
-            if self.check_server_status(selectedServer, True):
-                command = "start /B start cmd.exe @cmd /k bin\lan-play.exe --relay-server-addr %s" % selectedServer
-                os.system(command)
+        if self.check_server_status(selectedServer, True):
+            command = "start /B start cmd.exe @cmd /k bin\lan-play.exe --relay-server-addr %s" % selectedServer
+            os.system(command)
         else:
             self.errorDialog('Please select a server from the list.')
 
