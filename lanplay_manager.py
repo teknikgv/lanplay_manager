@@ -4,7 +4,6 @@ import platform
 import re
 import sys
 import threading
-from tkinter import *
 
 import requests
 from PyQt5 import uic, QtGui
@@ -86,16 +85,17 @@ class LanplayManagerWindow(QMainWindow):
         selected_server = self.check_selected_server()
         if selected_server:
             if self.check_server_status(selected_server, True):
+                path = os.environ.get("TEKNIK_BINS_DIR", "bin/")
                 match platform.system():
                     case "Windows":
-                        command = "start /B start cmd.exe @cmd /k bin\lan-play.exe --relay-server-addr %s" % selected_server
-                    case "Darwin":
-                        command = "bash -c \"bin/lan-play-macos --relay-server-addr %s\"" % selected_server
-                    case "Linux":
-                        command = "bash -c  \"bin/lan-play-linux --relay-server-addr %s \"" % selected_server
+                        command = "start /B start cmd.exe @cmd /k %s %s"
+                    case "Darwin" | "Linux":
+                        command = "bash -c \"%s %s\""
                     case _:
                         print("unsupported system!")
                         sys.exit(-1)
+                flags = "--relay-server-addr %s" % selected_server
+                command = command % (path, flags)
                 thread = threading.Thread(target=os.system, args=(command,))
                 thread.start()
         else:
