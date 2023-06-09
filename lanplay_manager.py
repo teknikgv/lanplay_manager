@@ -14,6 +14,30 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QInputD
 from db import database
 
 
+def http(untouched: str) -> str:
+    return "http://" + untouched
+
+
+def send_get_request(url: str):
+    try:
+        res = requests.get(http(url), timeout=1)
+        if res.status_code != 200:
+            raise ConnectionError("non-200 status code")
+        return res
+    except:
+        pass
+
+
+def send_post_request(url: str, json):
+    try:
+        res = requests.post(http(url), json=json, timeout=1)
+        if res.status_code != 200:
+            raise ConnectionError("non-200 status code")
+        return res
+    except:
+        pass
+
+
 class LanplayManagerWindow(QMainWindow):
     class ErrorDialog(QDialog):
         def __init__(self, message):
@@ -118,39 +142,24 @@ class LanplayManagerWindow(QMainWindow):
         """
         status = {}
 
-        try:
-            url = "http://" + server_address
-            res = requests.post(url, json=self.graphql_request, timeout=1)
-            print(server_address)
-            if res.status_code == 200:
-                data = json.loads(res.text)['data']
-                status['online'] = int(data['serverInfo']['online'])
-                status['idle'] = int(data['serverInfo']['idle'])
-                status['rooms'] = data['room']
-                return status
-        except:
-            pass
+        res = send_post_request(server_address, json)
+        print(server_address)
+        data = json.loads(res.text)['data']
+        status['online'] = int(data['serverInfo']['online'])
+        status['idle'] = int(data['serverInfo']['idle'])
+        status['rooms'] = data['room']
+        return status
 
-        try:
-            url = "http://%s/info" % server_address
-            res = requests.get(url, timeout=1)
-            if res.status_code == 200:
-                data = json.loads(res.text)
-                status = {}
-                if 'online' in data:
-                    status['online'] = int(data['online'])
-        except:
-            pass
+        res = send_get_request(server_address + "/info")
+        data = json.loads(res.text)
+        status = {}
+        if 'online' in data:
+            status['online'] = int(data['online'])
 
-        try:
-            url = "http://" + server_address
-            res = requests.get(url, timeout=1)
-            if res.status_code == 200:
-                data = json.loads(res.text)
-                if 'clientCount' in data:
-                    status['online'] = int(data['clientCount'])
-        except:
-            pass
+        res = send_get_request(server_address)
+        data = json.loads(res.text)
+        if 'clientCount' in data:
+            status['online'] = int(data['clientCount'])
 
         if 'online' not in status:
             status['online'] = "?"
