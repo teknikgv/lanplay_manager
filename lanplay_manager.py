@@ -21,9 +21,9 @@ class LanplayManagerWindow(QMainWindow):
 
             self.setWindowTitle("Errrrorrr!")
 
-            QBtn = QDialogButtonBox.Ok
+            q_dialog_button = QDialogButtonBox.Ok
 
-            self.buttonBox = QDialogButtonBox(QBtn)
+            self.buttonBox = QDialogButtonBox(q_dialog_button)
             self.buttonBox.accepted.connect(self.accept)
             self.buttonBox.rejected.connect(self.reject)
 
@@ -96,7 +96,7 @@ class LanplayManagerWindow(QMainWindow):
                         sys.exit(-1)
                 flags = "--relay-server-addr %s" % selected_server
                 command = command % (path, flags)
-                thread = threading.Thread(target=os.system, args=(command,))
+                thread = threading.Thread(target=os.system, args=command)
                 thread.start()
         else:
             self.ErrorDialog('Please select a server from the list.')
@@ -119,7 +119,7 @@ class LanplayManagerWindow(QMainWindow):
         status = {}
 
         try:
-            url = "http://%s" % server_address
+            url = "http://" + server_address
             res = requests.post(url, json=self.graphql_request, timeout=1)
             print(server_address)
             if res.status_code == 200:
@@ -143,7 +143,7 @@ class LanplayManagerWindow(QMainWindow):
             pass
 
         try:
-            url = "http://%s" % server_address
+            url = "http://" + server_address
             res = requests.get(url, timeout=1)
             if res.status_code == 200:
                 data = json.loads(res.text)
