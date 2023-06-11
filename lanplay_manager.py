@@ -48,17 +48,20 @@ def get_system_os() -> SupportedOS:
     system = platform.system()
     match system:
         case "Windows":
-            return SupportedOS.WINDOWS
+            out = SupportedOS.WINDOWS
         case "Darwin":
-            return SupportedOS.MACOS
+            out = SupportedOS.MACOS
         case "Linux":
-            return SupportedOS.LINUX
+            out = SupportedOS.LINUX
         case _:
             print("unsupported system!")
             # Quitting because no binary, unrecoverable.
             # I don't think we're going to be supporting BSD or whatever soon.
             # TODO bad practice?
             sys.exit(-1)
+
+    print("system is " + out.name)
+    return out
 
 
 def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
