@@ -334,7 +334,6 @@ server_port_values_label = "Server port must be between 0 and 65535"
 server_address_example_label = "Server address must be like lan.teknik.app:11451 for example"
 
 if __name__ == "__main__":
-    # app = QApplication(sys.argv)
-    # lanplaymanagerwindow = LanplayManagerWindow()
-    # sys.exit(app.exec())
-    download_binaries("bin/", SupportedOS.LINUX)
+    app = QApplication(sys.argv)
+    lanplaymanagerwindow = LanplayManagerWindow()
+    sys.exit(app.exec())
