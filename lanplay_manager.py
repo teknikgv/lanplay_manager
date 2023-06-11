@@ -1,3 +1,4 @@
+import enum
 import json
 import os
 import platform
@@ -10,7 +11,6 @@ from PyQt5 import uic, QtGui
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QInputDialog, QDialog, \
     QLineEdit, QDialogButtonBox, QVBoxLayout, QLabel
-
 from db import database
 
 
@@ -21,8 +21,7 @@ def http(untouched: str) -> str:
 def send_get_request(url: str):
     try:
         res = requests.get(http(url), timeout=1)
-        if res.status_code != 200:
-            raise ConnectionError("non-200 status code")
+        res.raise_for_status()
         return res
     except:
         pass
@@ -31,11 +30,42 @@ def send_get_request(url: str):
 def send_post_request(url: str, json):
     try:
         res = requests.post(http(url), json=json, timeout=1)
-        if res.status_code != 200:
-            raise ConnectionError("non-200 status code")
+        res.raise_for_status()
         return res
     except:
         pass
+
+
+def download_binaries(path_to_binary_folder: str, host_os: str):
+    if not os.path.exists(path_to_binary_folder) and not os.path.isfile(path_to_binary_folder):
+        os.makedirs(path_to_binary_folder)
+
+    # constant throughout program, change whenever new version releases.
+    release = "0.2.3"
+
+    # constant, probably shouldn't change.
+    binary_download_url = "https://github.com/spacemeowx2/switch-lan-play/releases/download/v%s/" % release
+
+    match host_os:
+        case "Windows":
+            binary_name = "lan-play-win64.exe"
+        case "Darwin":
+            binary_name = "lan-play-macos"
+        case "Linux":
+            binary_name = "lan-play-linux"
+        case _:
+            print("unsupported system!")
+            sys.exit(-1)
+
+    full_filepath = os.path.abspath(path_to_binary_folder + binary_name)
+
+    with requests.get(binary_download_url + binary_name, stream=True) as res:
+        res.raise_for_status()
+        with open(full_filepath, 'wb') as file:
+            for chunk in res.iter_content(chunk_size=1024):
+                if chunk:
+                    file.write(chunk)
+                    file.flush()
 
 
 class LanplayManagerWindow(QMainWindow):
@@ -110,7 +140,8 @@ class LanplayManagerWindow(QMainWindow):
         if selected_server:
             if self.check_server_status(selected_server, True):
                 path = os.environ.get("TEKNIK_BINS_DIR", "bin/")
-                match platform.system():
+                system = platform.system()
+                match system:
                     case "Windows":
                         command = "start /B start cmd.exe @cmd /k %s %s"
                     case "Darwin" | "Linux":
@@ -120,6 +151,7 @@ class LanplayManagerWindow(QMainWindow):
                         sys.exit(-1)
                 flags = "--relay-server-addr %s" % selected_server
                 command = command % (path, flags)
+                download_binaries(path, system)
                 thread = threading.Thread(target=os.system, args=command)
                 thread.start()
         else:

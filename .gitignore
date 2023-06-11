@@ -412,3 +412,4 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/qt,linux,macos,python,windows,pycharm+all,visualstudiocode
 
 lanplay.db
+bin/
