@@ -36,7 +36,32 @@ def send_post_request(url: str, json):
         pass
 
 
-def download_binaries(path_to_binary_folder: str, host_os: str):
+# a thousand people have written this abstraction before me. a hundred thousand.
+# why is python all strings. who did this.
+class SupportedOS(enum.Enum):
+    WINDOWS = 1
+    MACOS = 2
+    LINUX = 3
+
+
+def get_system_os() -> SupportedOS:
+    system = platform.system()
+    match system:
+        case "Windows":
+            return SupportedOS.WINDOWS
+        case "Darwin":
+            return SupportedOS.MACOS
+        case "Linux":
+            return SupportedOS.LINUX
+        case _:
+            print("unsupported system!")
+            # Quitting because no binary, unrecoverable.
+            # I don't think we're going to be supporting BSD or whatever soon.
+            # TODO bad practice?
+            sys.exit(-1)
+
+
+def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
     if not os.path.exists(path_to_binary_folder) and not os.path.isfile(path_to_binary_folder):
         os.makedirs(path_to_binary_folder)
 
@@ -47,14 +72,14 @@ def download_binaries(path_to_binary_folder: str, host_os: str):
     binary_download_url = "https://github.com/spacemeowx2/switch-lan-play/releases/download/v%s/" % release
 
     match host_os:
-        case "Windows":
+        case SupportedOS.WINDOWS:
             binary_name = "lan-play-win64.exe"
-        case "Darwin":
+        case SupportedOS.MACOS:
             binary_name = "lan-play-macos"
-        case "Linux":
+        case SupportedOS.LINUX:
             binary_name = "lan-play-linux"
         case _:
-            print("unsupported system!")
+            print("what")
             sys.exit(-1)
 
     full_filepath = os.path.abspath(path_to_binary_folder + binary_name)
@@ -140,11 +165,11 @@ class LanplayManagerWindow(QMainWindow):
         if selected_server:
             if self.check_server_status(selected_server, True):
                 path = os.environ.get("TEKNIK_BINS_DIR", "bin/")
-                system = platform.system()
+                system = get_system_os()
                 match system:
-                    case "Windows":
+                    case SupportedOS.WINDOWS:
                         command = "start /B start cmd.exe @cmd /k %s %s"
-                    case "Darwin" | "Linux":
+                    case SupportedOS.MACOS | SupportedOS.LINUX:
                         command = "bash -c \"%s %s\""
                     case _:
                         print("unsupported system!")
@@ -309,6 +334,7 @@ server_port_values_label = "Server port must be between 0 and 65535"
 server_address_example_label = "Server address must be like lan.teknik.app:11451 for example"
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    lanplaymanagerwindow = LanplayManagerWindow()
-    sys.exit(app.exec())
+    # app = QApplication(sys.argv)
+    # lanplaymanagerwindow = LanplayManagerWindow()
+    # sys.exit(app.exec())
+    download_binaries("bin/", SupportedOS.LINUX)
