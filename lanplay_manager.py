@@ -172,7 +172,9 @@ class LanplayManagerWindow(QMainWindow):
                 match system:
                     case SupportedOS.WINDOWS:
                         command = "start /B start cmd.exe @cmd /k %s %s"
-                    case SupportedOS.MACOS | SupportedOS.LINUX:
+                    case SupportedOS.MACOS:
+                        command = "sudo bash -c \"%s %s\""
+                    case SupportedOS.LINUX:
                         command = "bash -c \"%s %s\""
                     case _:
                         print("unsupported system!")
