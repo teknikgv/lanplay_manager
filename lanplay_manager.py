@@ -95,9 +95,15 @@ def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
                     file.write(chunk)
                     file.flush()
 
-    if host_os == SupportedOS.MACOS:
+    match host_os:
+        case SupportedOS.MACOS:
         # issue, user would have to open terminal it was running from to enter password. do we *need* sudo?
-        os.system("sudo bash -c \"chmod u+x %s\"" % full_filepath)
+            os.system("sudo bash -c \"chmod u+x %s\"" % full_filepath)
+        case SupportedOS.LINUX:
+            os.system("bash -c \"chmod u+x %s\"")
+        case SupportedOS.WINDOWS: 
+            pass
+
 
 
 class LanplayManagerWindow(QMainWindow):
