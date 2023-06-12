@@ -204,7 +204,7 @@ class LanplayManagerWindow(QMainWindow):
         """
         status = {}
 
-        res = send_post_request(server_address, json)
+        res = send_post_request(server_address, self.graphql_request)
         print(server_address)
         data = json.loads(res.text)['data']
         status['online'] = int(data['serverInfo']['online'])
