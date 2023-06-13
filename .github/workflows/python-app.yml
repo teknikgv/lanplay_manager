@@ -38,7 +38,7 @@ jobs:
         run: pyinstaller lanplay_manager.spec
 
       - name: Copy assets
-        run: cp lib dist
+        run: cp -R lib dist
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.2
