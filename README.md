@@ -8,7 +8,8 @@ works on all platforms
 
 - go into the [actions](https://github.com/teknikgv/lanplay_manager/actions) tab  
 - click on the latest run with a green check  
-- download the artifact for your platform (you need to be logged in)  
+- download the artifact for your platform (you need to be logged in)
+- extract the archive to a new directory  
 - run the binary
 
 ## the slightly less easy way
