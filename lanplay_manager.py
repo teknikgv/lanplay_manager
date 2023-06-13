@@ -5,6 +5,7 @@ import platform
 import re
 import sys
 import threading
+import subprocess
 
 import requests
 from PyQt5 import uic, QtGui
@@ -182,11 +183,13 @@ class LanplayManagerWindow(QMainWindow):
         selected_server = self.check_selected_server()
         if selected_server:
             if self.check_server_status(selected_server, True):
-                path = os.environ.get("TEKNIK_BINS_DIR", "bin/")
+                path = os.environ.get("TEKNIK_BINS_DIR", "./bin/")
                 system = get_system_os()
+
+                """ handled by subprocess now
                 match system:
                     case SupportedOS.WINDOWS:
-                        command = "start /B start cmd.exe @cmd /k %s %s"
+                        command = "start cmd.exe @cmd /k %s %s"
                     case SupportedOS.MACOS:
                         command = "sudo bash -c \"%s %s\""
                     case SupportedOS.LINUX:
@@ -194,14 +197,18 @@ class LanplayManagerWindow(QMainWindow):
                     case _:
                         print("unsupported system!")
                         sys.exit(-1)
+                """
+
                 flags = "--relay-server-addr %s" % selected_server
+                path = path.replace("/", "\\") if system is SupportedOS.WINDOWS else path # bc fuuuuck windows
                 download_binaries(path, system)
                 path += get_os_binary_name(system)
-                path = path.replace("/", "\\") if system is SupportedOS.WINDOWS else path
-                command = command % (path, flags)
-                print(command)
-                thread = threading.Thread(target=os.system, args=(command,))
-                thread.start()
+                path = os.path.abspath(path) # probably not needed, but just in case
+                command = "%s %s" % (path, flags)
+
+                p = subprocess.Popen(command, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                print("launched server with pid %s" % p.pid) # hey, why not
+
         else:
             self.ErrorDialog('Please select a server from the list.')
 
