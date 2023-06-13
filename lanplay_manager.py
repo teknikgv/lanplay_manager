@@ -219,7 +219,9 @@ class LanplayManagerWindow(QMainWindow):
                 match system: # this is dumb, but windows apparently doesn't care about shell=True
                     case SupportedOS.WINDOWS:
                         p = subprocess.Popen(command, creationflags=subprocess.CREATE_NEW_CONSOLE)
-                    case _:
+                    case SupportedOS.MACOS:
+                        p = subprocess.Popen("sudo " + command, shell=True) # argh
+                    case SupportedOS.LINUX:
                         p = subprocess.Popen(command, shell=True)
                 print("launched server with pid %s" % p.pid) # hey, why not
 
