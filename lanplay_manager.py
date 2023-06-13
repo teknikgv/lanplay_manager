@@ -1,18 +1,109 @@
+import enum
 import json
 import os
 import platform
 import re
 import sys
 import threading
-from tkinter import *
 
 import requests
 from PyQt5 import uic, QtGui
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QInputDialog, QDialog, \
     QLineEdit, QDialogButtonBox, QVBoxLayout, QLabel
-
 from db import database
+
+
+def http(untouched: str) -> str:
+    return "http://" + untouched
+
+
+def send_get_request(url: str):
+    try:
+        res = requests.get(http(url), timeout=1)
+        res.raise_for_status()
+        return res
+    except:
+        pass
+
+
+def send_post_request(url: str, json):
+    try:
+        res = requests.post(http(url), json=json, timeout=1)
+        res.raise_for_status()
+        return res
+    except:
+        pass
+
+
+# a thousand people have written this abstraction before me. a hundred thousand.
+# why is python all strings. who did this.
+class SupportedOS(enum.Enum):
+    WINDOWS = 1
+    MACOS = 2
+    LINUX = 3
+
+
+def get_system_os() -> SupportedOS:
+    system = platform.system()
+    match system:
+        case "Windows":
+            out = SupportedOS.WINDOWS
+        case "Darwin":
+            out = SupportedOS.MACOS
+        case "Linux":
+            out = SupportedOS.LINUX
+        case _:
+            print("unsupported system!")
+            # Quitting because no binary, unrecoverable.
+            # I don't think we're going to be supporting BSD or whatever soon.
+            # TODO bad practice?
+            sys.exit(-1)
+
+    print("system is " + out.name)
+    return out
+
+
+def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
+    if not os.path.exists(path_to_binary_folder) and not os.path.isfile(path_to_binary_folder):
+        os.makedirs(path_to_binary_folder)
+
+    # constant throughout program, change whenever new version releases.
+    release = "0.2.3"
+
+    # constant, probably shouldn't change.
+    binary_download_url = "https://github.com/spacemeowx2/switch-lan-play/releases/download/v%s/" % release
+
+    match host_os:
+        case SupportedOS.WINDOWS:
+            binary_name = "lan-play-win64.exe"
+        case SupportedOS.MACOS:
+            binary_name = "lan-play-macos"
+        case SupportedOS.LINUX:
+            binary_name = "lan-play-linux"
+        case _:
+            print("what")
+            sys.exit(-1)
+
+    full_filepath = os.path.abspath(path_to_binary_folder + binary_name)
+
+    with requests.get(binary_download_url + binary_name, stream=True) as res:
+        res.raise_for_status()
+        with open(full_filepath, 'wb') as file:
+            for chunk in res.iter_content(chunk_size=1024):
+                if chunk:
+                    file.write(chunk)
+                    file.flush()
+
+    match host_os:
+        case SupportedOS.MACOS:
+        # issue, user would have to open terminal it was running from to enter password. do we *need* sudo?
+            os.system("sudo bash -c \"chmod u+x %s\"" % full_filepath)
+        case SupportedOS.LINUX:
+            os.system("bash -c \"chmod u+x %s\"")
+        case SupportedOS.WINDOWS: 
+            pass
+
 
 
 class LanplayManagerWindow(QMainWindow):
@@ -22,9 +113,9 @@ class LanplayManagerWindow(QMainWindow):
 
             self.setWindowTitle("Errrrorrr!")
 
-            QBtn = QDialogButtonBox.Ok
+            q_dialog_button = QDialogButtonBox.Ok
 
-            self.buttonBox = QDialogButtonBox(QBtn)
+            self.buttonBox = QDialogButtonBox(q_dialog_button)
             self.buttonBox.accepted.connect(self.accept)
             self.buttonBox.rejected.connect(self.reject)
 
@@ -86,17 +177,22 @@ class LanplayManagerWindow(QMainWindow):
         selected_server = self.check_selected_server()
         if selected_server:
             if self.check_server_status(selected_server, True):
-                match platform.system():
-                    case "Windows":
-                        command = "start /B start cmd.exe @cmd /k bin\lan-play.exe --relay-server-addr %s" % selected_server
-                    case "Darwin":
-                        command = "bash -c \"bin/lan-play-macos --relay-server-addr %s\"" % selected_server
-                    case "Linux":
-                        command = "bash -c  \"bin/lan-play-linux --relay-server-addr %s \"" % selected_server
+                path = os.environ.get("TEKNIK_BINS_DIR", "bin/")
+                system = get_system_os()
+                match system:
+                    case SupportedOS.WINDOWS:
+                        command = "start /B start cmd.exe @cmd /k %s %s"
+                    case SupportedOS.MACOS:
+                        command = "sudo bash -c \"%s %s\""
+                    case SupportedOS.LINUX:
+                        command = "bash -c \"%s %s\""
                     case _:
                         print("unsupported system!")
                         sys.exit(-1)
-                thread = threading.Thread(target=os.system, args=(command,))
+                flags = "--relay-server-addr %s" % selected_server
+                command = command % (path, flags)
+                download_binaries(path, system)
+                thread = threading.Thread(target=os.system, args=command)
                 thread.start()
         else:
             self.ErrorDialog('Please select a server from the list.')
@@ -118,39 +214,24 @@ class LanplayManagerWindow(QMainWindow):
         """
         status = {}
 
-        try:
-            url = "http://%s" % server_address
-            res = requests.post(url, json=self.graphql_request, timeout=1)
-            print(server_address)
-            if res.status_code == 200:
-                data = json.loads(res.text)['data']
-                status['online'] = int(data['serverInfo']['online'])
-                status['idle'] = int(data['serverInfo']['idle'])
-                status['rooms'] = data['room']
-                return status
-        except:
-            pass
+        res = send_post_request(server_address, self.graphql_request)
+        print(server_address)
+        data = json.loads(res.text)['data']
+        status['online'] = int(data['serverInfo']['online'])
+        status['idle'] = int(data['serverInfo']['idle'])
+        status['rooms'] = data['room']
+        return status
 
-        try:
-            url = "http://%s/info" % server_address
-            res = requests.get(url, timeout=1)
-            if res.status_code == 200:
-                data = json.loads(res.text)
-                status = {}
-                if 'online' in data:
-                    status['online'] = int(data['online'])
-        except:
-            pass
+        res = send_get_request(server_address + "/info")
+        data = json.loads(res.text)
+        status = {}
+        if 'online' in data:
+            status['online'] = int(data['online'])
 
-        try:
-            url = "http://%s" % server_address
-            res = requests.get(url, timeout=1)
-            if res.status_code == 200:
-                data = json.loads(res.text)
-                if 'clientCount' in data:
-                    status['online'] = int(data['clientCount'])
-        except:
-            pass
+        res = send_get_request(server_address)
+        data = json.loads(res.text)
+        if 'clientCount' in data:
+            status['online'] = int(data['clientCount'])
 
         if 'online' not in status:
             status['online'] = "?"

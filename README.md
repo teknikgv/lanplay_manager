@@ -24,6 +24,6 @@ follow this guide for your specific platform instructions
 [pi](https://rentry.org/TeknikLAN#raspberry-pi).
 
 # permission error
-`sudo chmod u+x pathtofile`
+if you get a permission error on linux or macOS, execute `chmod +x bin/lan-play-*`
 
 replace pathtofile with the actual path
