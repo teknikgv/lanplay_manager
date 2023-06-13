@@ -88,7 +88,7 @@ def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
     # constant, probably shouldn't change.
     binary_download_url = "https://github.com/spacemeowx2/switch-lan-play/releases/download/v%s/" % release
 
-    binary_name = get_os_binary_name(get_system_os())
+    binary_name = get_os_binary_name(host_os)
 
     full_filepath = os.path.abspath(path_to_binary_folder + binary_name)
 
@@ -196,8 +196,8 @@ class LanplayManagerWindow(QMainWindow):
                         sys.exit(-1)
                 flags = "--relay-server-addr %s" % selected_server
                 download_binaries(path, system)
-                path += get_os_binary_name(get_system_os())
-                path = path.replace("/", "\\") if get_system_os() is SupportedOS.WINDOWS else path
+                path += get_os_binary_name(system)
+                path = path.replace("/", "\\") if system is SupportedOS.WINDOWS else path
                 command = command % (path, flags)
                 print(command)
                 thread = threading.Thread(target=os.system, args=(command,))
