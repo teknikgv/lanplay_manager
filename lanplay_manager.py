@@ -104,7 +104,7 @@ def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
     if host_os is not SupportedOS.WINDOWS:
         # make the file executable
         command = "chmod u+x %s" % full_filepath
-        p = subprocess.run(command)
+        p = subprocess.run(command.split())
         if p.returncode != 0:
             # try again with sudo
             p = subprocess.run("sudo " + command, shell=True)
