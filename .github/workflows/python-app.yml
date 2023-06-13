@@ -34,6 +34,11 @@ jobs:
           pip install pyinstaller
           pip install -r requirements.txt
 
+      - name: Install Linux specific dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt install -y python3-pyqt5
+
       - name: Build binary
         run: pyinstaller lanplay_manager.spec
 
