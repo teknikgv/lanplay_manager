@@ -100,7 +100,16 @@ def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
                 if chunk:
                     file.write(chunk)
                     file.flush()
-
+    
+    if host_os is not SupportedOS.WINDOWS:
+        # make the file executable
+        command = "chmod u+x %s" % full_filepath
+        p = subprocess.run(command)
+        if p.returncode != 0:
+            # try again with sudo
+            p = subprocess.Popen("sudo " + command, shell=True)
+    
+    """
     match host_os:
         case SupportedOS.MACOS:
         # issue, user would have to open terminal it was running from to enter password. do we *need* sudo? pretty sure we dont need it here
@@ -109,6 +118,7 @@ def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
             os.system("bash -c \"chmod u+x %s\"" % full_filepath)
         case SupportedOS.WINDOWS: 
             pass
+    """
 
 
 
@@ -206,7 +216,11 @@ class LanplayManagerWindow(QMainWindow):
                 path = os.path.abspath(path) # probably not needed, but just in case
                 command = "%s %s" % (path, flags)
 
-                p = subprocess.Popen(command, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                match system: # this is dumb, but windows apparently doesn't care about shell=True
+                    case SupportedOS.WINDOWS:
+                        p = subprocess.Popen(command, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                    case _:
+                        p = subprocess.Popen(command, shell=True)
                 print("launched server with pid %s" % p.pid) # hey, why not
 
         else:
