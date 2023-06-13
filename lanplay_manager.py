@@ -107,7 +107,7 @@ def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
         p = subprocess.run(command)
         if p.returncode != 0:
             # try again with sudo
-            p = subprocess.Popen("sudo " + command, shell=True)
+            p = subprocess.run("sudo " + command, shell=True)
     
     """
     match host_os:
