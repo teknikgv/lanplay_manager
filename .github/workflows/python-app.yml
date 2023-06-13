@@ -37,7 +37,7 @@ jobs:
       - name: Install Linux specific dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt-get install -y python3-pyqt5 libicu-dev
+          sudo apt-get install -y python3-pyqt5 libicu-dev libicu70
 
       - name: Build binary
         run: pyinstaller lanplay_manager.spec
