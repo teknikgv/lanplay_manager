@@ -214,13 +214,18 @@ class LanplayManagerWindow(QMainWindow):
         """
         status = {}
 
-        res = send_post_request(server_address, self.graphql_request)
-        print(server_address)
-        data = json.loads(res.text)['data']
-        status['online'] = int(data['serverInfo']['online'])
-        status['idle'] = int(data['serverInfo']['idle'])
-        status['rooms'] = data['room']
-        return status
+        try:
+            res = send_post_request(server_address, self.graphql_request)
+            print(server_address)
+            data = json.loads(res.text)['data']
+            status['online'] = int(data['serverInfo']['online'])
+            status['idle'] = int(data['serverInfo']['idle'])
+            status['rooms'] = data['room']
+            return status
+        except Exception as e:
+            print(e)
+            return None
+
 
         res = send_get_request(server_address + "/info")
         data = json.loads(res.text)
@@ -275,7 +280,7 @@ class LanplayManagerWindow(QMainWindow):
                 if port_server < 0 or port_server > 65535:
                     self.ErrorDialog('Server address invalid').exec()
                     self.add_server()
-                elif self.check_server_status(server_address, True):
+                elif self.check_server_status(server_address, True) is not None:
                     db = database()
                     rows = db.select_server(server_address)
                     if rows:
@@ -285,6 +290,9 @@ class LanplayManagerWindow(QMainWindow):
                         db.insert_server(server_address)
                         self.refresh_server_list_thread()
                     db.close_connection()
+                else:
+                    self.ErrorDialog('Server not reachable').exec()
+                    self.add_server()
             else:
                 self.ErrorDialog('Server address invalid').exec()
                 self.add_server()
