@@ -64,16 +64,7 @@ def get_system_os() -> SupportedOS:
     return out
 
 
-def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
-    if not os.path.exists(path_to_binary_folder) and not os.path.isfile(path_to_binary_folder):
-        os.makedirs(path_to_binary_folder)
-
-    # constant throughout program, change whenever new version releases.
-    release = "0.2.3"
-
-    # constant, probably shouldn't change.
-    binary_download_url = "https://github.com/spacemeowx2/switch-lan-play/releases/download/v%s/" % release
-
+def get_os_binary_name(host_os):
     match host_os:
         case SupportedOS.WINDOWS:
             binary_name = "lan-play-win64.exe"
@@ -84,6 +75,20 @@ def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
         case _:
             print("what")
             sys.exit(-1)
+    return binary_name
+
+
+def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
+    if not os.path.exists(path_to_binary_folder) and not os.path.isfile(path_to_binary_folder):
+        os.makedirs(path_to_binary_folder)
+
+    # constant throughout program, change whenever new version releases.
+    release = "0.2.3"
+
+    # constant, probably shouldn't change.
+    binary_download_url = "https://github.com/spacemeowx2/switch-lan-play/releases/download/v%s/" % release
+
+    binary_name = get_os_binary_name(host_os)
 
     full_filepath = os.path.abspath(path_to_binary_folder + binary_name)
 
@@ -97,10 +102,10 @@ def download_binaries(path_to_binary_folder: str, host_os: SupportedOS):
 
     match host_os:
         case SupportedOS.MACOS:
-        # issue, user would have to open terminal it was running from to enter password. do we *need* sudo?
+        # issue, user would have to open terminal it was running from to enter password. do we *need* sudo? pretty sure we dont need it here
             os.system("sudo bash -c \"chmod u+x %s\"" % full_filepath)
         case SupportedOS.LINUX:
-            os.system("bash -c \"chmod u+x %s\"")
+            os.system("bash -c \"chmod u+x %s\"" % full_filepath)
         case SupportedOS.WINDOWS: 
             pass
 
@@ -190,9 +195,12 @@ class LanplayManagerWindow(QMainWindow):
                         print("unsupported system!")
                         sys.exit(-1)
                 flags = "--relay-server-addr %s" % selected_server
-                command = command % (path, flags)
                 download_binaries(path, system)
-                thread = threading.Thread(target=os.system, args=command)
+                path += get_os_binary_name(system)
+                path = path.replace("/", "\\") if system is SupportedOS.WINDOWS else path
+                command = command % (path, flags)
+                print(command)
+                thread = threading.Thread(target=os.system, args=(command,))
                 thread.start()
         else:
             self.ErrorDialog('Please select a server from the list.')
@@ -265,7 +273,7 @@ class LanplayManagerWindow(QMainWindow):
         except:
             return None
 
-    def do_popup(self, event):
+    def do_popup(self, event): # this function is never used
         self.popup_menu.post(event.x_root, event.y_root)
 
     def add_server(self):
